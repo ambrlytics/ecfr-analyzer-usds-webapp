@@ -25,6 +25,11 @@ database.init_db()
 CFR_CACHE = None
 CACHE_FILE = "cfr_word_counts_cache.json"
 
+# In-memory cache for expensive API calls (1 hour TTL)
+STATS_CACHE = {"data": None, "timestamp": None}
+TRENDS_CACHE = {"data": None, "timestamp": None}
+CACHE_TTL = 3600  # 1 hour in seconds
+
 
 def classify_deregulation_likelihood(ai_analysis: str, recent_revisions_count: int) -> tuple:
     """Strictly classify deregulation likelihood based on AI analysis.
@@ -194,6 +199,15 @@ async def get_ecfr_agencies(include_word_counts: bool = True):
 @app.get("/api/overview/stats")
 async def get_overview_stats():
     """Get overview statistics for dashboard."""
+    # Check cache first
+    import time
+    if STATS_CACHE["data"] and STATS_CACHE["timestamp"]:
+        age = time.time() - STATS_CACHE["timestamp"]
+        if age < CACHE_TTL:
+            print(f"📦 Returning cached stats (age: {int(age)}s)")
+            return STATS_CACHE["data"]
+
+    print("🔄 Fetching fresh stats...")
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             # Fetch agencies
@@ -230,11 +244,19 @@ async def get_overview_stats():
                     print(f"Error fetching title {title_num}: {e}")
                     continue
 
-            return {
+            result = {
                 'total_agencies': total_agencies,
                 'total_sub_agencies': total_sub_agencies,
                 'total_regulations': total_sections
             }
+
+            # Cache the result
+            import time
+            STATS_CACHE["data"] = result
+            STATS_CACHE["timestamp"] = time.time()
+            print(f"✅ Stats cached")
+
+            return result
         except Exception as e:
             raise HTTPException(status_code=503, detail=f"Failed to fetch stats: {str(e)}")
 
@@ -1142,6 +1164,15 @@ async def get_complexity_rankings(db: Session = Depends(database.get_db)):
 @app.get("/api/trends/titles")
 async def get_title_trends():
     """Get government-wide trends by CFR title for complexity and deregulation."""
+    # Check cache first
+    import time
+    if TRENDS_CACHE["data"] and TRENDS_CACHE["timestamp"]:
+        age = time.time() - TRENDS_CACHE["timestamp"]
+        if age < CACHE_TTL:
+            print(f"📦 Returning cached trends (age: {int(age)}s)")
+            return TRENDS_CACHE["data"]
+
+    print("🔄 Fetching fresh trends...")
     import httpx
     from datetime import datetime, timedelta
     from collections import defaultdict
@@ -1218,12 +1249,20 @@ async def get_title_trends():
                     print(f"Error fetching title {title_num}: {e}")
                     continue
 
-            return {
+            result = {
                 'months': months_12,  # For frequency mode
                 'years': years_5,     # For cumulative mode
                 'frequency_trends': dict(frequency_trends),
                 'cumulative_trends': dict(cumulative_trends)
             }
+
+            # Cache the result
+            import time
+            TRENDS_CACHE["data"] = result
+            TRENDS_CACHE["timestamp"] = time.time()
+            print(f"✅ Trends cached")
+
+            return result
 
     except Exception as e:
         print(f"Error in get_title_trends: {e}")
