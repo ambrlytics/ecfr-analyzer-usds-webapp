@@ -11,7 +11,15 @@ Base = declarative_base()
 DB_PATH = Path("data/regulations.db")
 DB_PATH.parent.mkdir(exist_ok=True)
 
-engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+# Increase pool size and timeout for concurrent requests
+engine = create_engine(
+    f"sqlite:///{DB_PATH}",
+    echo=False,
+    pool_size=20,
+    max_overflow=40,
+    pool_timeout=60,
+    pool_pre_ping=True
+)
 SessionLocal = sessionmaker(bind=engine)
 
 
