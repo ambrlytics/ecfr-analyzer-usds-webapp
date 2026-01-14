@@ -1003,7 +1003,6 @@ EXPLANATION: [1-2 sentences explaining your assessment]"""
 
                 try:
                     from openai import OpenAI
-                    import os
 
                     openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
