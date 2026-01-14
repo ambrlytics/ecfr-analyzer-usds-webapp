@@ -8,8 +8,16 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
 Base = declarative_base()
-DB_PATH = Path("data/regulations.db")
-DB_PATH.parent.mkdir(exist_ok=True)
+
+# Use absolute path for Render's persistent disk, fallback to relative for local dev
+import os
+if os.path.exists("/opt/render/project/src/data"):
+    # Production: Use Render's persistent disk
+    DB_PATH = Path("/opt/render/project/src/data/regulations.db")
+else:
+    # Local development: Use relative path
+    DB_PATH = Path("data/regulations.db")
+    DB_PATH.parent.mkdir(exist_ok=True)
 
 # Increase pool size and timeout for concurrent requests
 engine = create_engine(

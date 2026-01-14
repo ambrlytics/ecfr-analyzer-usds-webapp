@@ -748,12 +748,8 @@
                     await loadAIExplanation(agency.slug, idx);
                 }
 
-                // Auto-load deep regulatory analysis if not already loaded
-                const deepAnalysisDiv = document.getElementById(`deep-analysis-${idx}`);
-                if (deepAnalysisDiv && !deepAnalysisDiv.classList.contains('visible') && !deepAnalysisDiv.dataset.loaded
-                    && agency.slug && agency.cfr_references && agency.cfr_references.length > 0) {
-                    await loadDeepAnalysisAuto(agency.slug, idx);
-                }
+                // Don't auto-load deep analysis - let users click the button to load it
+                // This prevents slow API calls on every card expansion
             }
         }
 

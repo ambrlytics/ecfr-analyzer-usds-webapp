@@ -101,7 +101,6 @@ def load_cfr_cache():
         return CFR_CACHE
 
     import json
-    import os
 
     if os.path.exists(CACHE_FILE):
         print(f"Loading CFR cache from {CACHE_FILE}...")

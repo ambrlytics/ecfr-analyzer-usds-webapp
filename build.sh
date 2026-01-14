@@ -24,8 +24,8 @@ ls -lh /opt/render/project/src/data/ || echo "Directory listing failed"
 # 5. Pre-compute deregulation badges (optional - only if API key is set)
 if [ -n "$OPENAI_API_KEY" ]; then
     echo "🤖 Pre-computing deregulation badges..."
-    echo "   This will take approximately 5-10 minutes for all 153 agencies..."
-    python compute_deregulation_cache.py --concurrency 10
+    echo "   This will take approximately 10-15 minutes for all 153 agencies..."
+    python compute_deregulation_cache.py --concurrency 5
     echo "✅ Deregulation cache populated"
 
     # Verify badges were created
