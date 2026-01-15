@@ -904,6 +904,9 @@ async def get_deregulation_likelihood(
         use_cache: If True (default), uses cached results. Set to False to force recomputation.
         db: Database session
     """
+    # Log database path for debugging
+    print(f"🔍 Database path: {database.DB_PATH}")
+
     # Try to get from cache first
     if use_cache:
         cached = database.get_deregulation_cache(db, agency_slug)

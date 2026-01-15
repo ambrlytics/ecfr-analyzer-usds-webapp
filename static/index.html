@@ -797,7 +797,15 @@
             badge.dataset.loading = 'true';
 
             try {
-                const response = await fetch(`/api/deregulation/likelihood/${slug}`);
+                // Add timeout to prevent hanging requests
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+                const response = await fetch(`/api/deregulation/likelihood/${slug}`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
                 const data = await response.json();
 
                 if (response.ok) {
@@ -835,8 +843,10 @@
                     badge.textContent = 'Unknown';
                 }
             } catch (error) {
+                console.error(`Failed to load badge for ${slug}:`, error);
                 badge.className = 'dereg-badge unknown';
-                badge.textContent = 'Unknown';
+                badge.textContent = error.name === 'AbortError' ? 'Timeout' : 'Unknown';
+                badge.title = error.message || 'Failed to load deregulation likelihood';
             } finally {
                 badge.dataset.loading = 'false';
             }
