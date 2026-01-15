@@ -740,16 +740,13 @@
 
                 // Badges are already loaded on initial render, no need to reload here
 
-                // Auto-load AI explanation if not already loaded
+                // Auto-load AI explanation for THIS card only (if not already loaded)
                 const explanationDiv = document.getElementById(`ai-explanation-${idx}`);
 
                 if (agency && agency.cfr_references && agency.cfr_references.length > 0
                     && !explanationDiv.dataset.loaded) {
                     await loadAIExplanation(agency.slug, idx);
                 }
-
-                // Don't auto-load deep analysis - let users click the button to load it
-                // This prevents slow API calls on every card expansion
             }
         }
 

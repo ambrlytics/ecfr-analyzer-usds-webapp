@@ -28,6 +28,9 @@ CACHE_FILE = "cfr_word_counts_cache.json"
 # In-memory cache for expensive API calls (1 hour TTL)
 STATS_CACHE = {"data": None, "timestamp": None}
 TRENDS_CACHE = {"data": None, "timestamp": None}
+# In-memory cache for AI explanations (by agency slug)
+# Format: {'slug': {'explanation': str, 'timestamp': float, 'cfr_references': []}}
+AI_EXPLANATION_CACHE = {}
 CACHE_TTL = 3600  # 1 hour in seconds
 
 
@@ -314,6 +317,22 @@ async def get_agency_changes(agency_name: str, db: Session = Depends(database.ge
 @app.get("/api/agency/{slug}/explain")
 async def explain_agency(slug: str):
     """Use AI to explain what an agency regulates based on CFR references."""
+    import time
+
+    # Check cache first
+    if slug in AI_EXPLANATION_CACHE:
+        cached = AI_EXPLANATION_CACHE[slug]
+        age = time.time() - cached['timestamp']
+        if age < CACHE_TTL:
+            print(f"📦 Returning cached AI explanation for {slug} (age: {int(age)}s)")
+            return {
+                'agency_name': cached['agency_name'],
+                'slug': slug,
+                'explanation': cached['explanation'],
+                'cfr_references': cached['cfr_references'],
+                'cached': True
+            }
+
     # Get OpenAI API key
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -410,13 +429,24 @@ Provide a concise, informative explanation suitable for a general audience."""
             except KeyError as e:
                 raise HTTPException(status_code=502, detail=f"Unexpected OpenAI API response format: {str(e)}")
 
-            return {
+            result = {
                 'agency_name': agency.get('name'),
                 'slug': slug,
                 'parent_agency': agency.get('parent_name'),
                 'cfr_references': refs_text,
                 'explanation': explanation
             }
+
+            # Cache the result
+            AI_EXPLANATION_CACHE[slug] = {
+                'agency_name': agency.get('name'),
+                'explanation': explanation,
+                'cfr_references': refs_text,
+                'timestamp': time.time()
+            }
+            print(f"💾 Cached AI explanation for {slug}")
+
+            return result
 
         except httpx.HTTPError as e:
             raise HTTPException(status_code=502, detail=f"Error fetching agency data: {str(e)}")
@@ -880,19 +910,7 @@ async def get_deregulation_likelihood(
         if cached:
             print(f"✅ Cache hit for {agency_slug}")
 
-            # Get last revision date from deep analysis
-            last_revision_date = None
-            try:
-                deep_analysis = await get_deep_deregulation_analysis(agency_slug, db)
-                if deep_analysis and deep_analysis.get('revision_history'):
-                    # Get the most recent revision date
-                    sorted_revisions = sorted(deep_analysis['revision_history'],
-                                            key=lambda x: x['date'], reverse=True)
-                    if sorted_revisions:
-                        last_revision_date = sorted_revisions[0]['date']
-            except:
-                pass  # If we can't get revision history, just use None
-
+            # Return cached data immediately without expensive deep analysis call
             return {
                 'likelihood': cached.likelihood,
                 'label': cached.label,
@@ -903,7 +921,7 @@ async def get_deregulation_likelihood(
                 'word_count_pct_change': None,
                 'cached': True,
                 'computed_at': cached.computed_at.isoformat(),
-                'last_revision_date': last_revision_date
+                'last_revision_date': cached.computed_at.isoformat()  # Use computed_at as last update
             }
         else:
             print(f"⚠️  Cache miss for {agency_slug} - will compute and cache")

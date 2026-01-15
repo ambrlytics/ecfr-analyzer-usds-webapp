@@ -9,6 +9,10 @@ import asyncio
 import argparse
 from datetime import datetime
 import database
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 async def process_agency(agency: dict, db, idx: int, total: int):
