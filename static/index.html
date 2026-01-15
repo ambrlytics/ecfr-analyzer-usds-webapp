@@ -639,6 +639,7 @@
                             <div style="flex: 1;">
                                 <div class="agency-name">
                                     ${a.name}
+                                    <span style="color: #999; font-weight: 400; font-size: 13px; margin-left: 8px;">${generateChecksum(a)}</span>
                                     ${a.parent_name ? `<span class="parent-indicator">Child of ${a.parent_name}</span>` : ''}
                                 </div>
                                 <div class="agency-meta">
@@ -682,7 +683,7 @@
                                 <div class="ai-explanation" id="ai-explanation-${idx}"></div>
                                 <button class="ai-explain-btn" onclick="loadDeepAnalysis('${a.slug}', ${idx})" style="margin-top: 8px;">
                                     <span>🔬</span>
-                                    <span id="deep-btn-text-${idx}">Deep Regulatory Analysis</span>
+                                    <span id="deep-btn-text-${idx}">Click To View Deep Regulatory Analysis</span>
                                 </button>
                                 <div class="ai-explanation" id="deep-analysis-${idx}"></div>
                             ` : ''}
@@ -848,6 +849,19 @@
             return '<span class="badge badge-low">Low</span>';
         }
 
+        // Helper: generate simple checksum from agency data
+        function generateChecksum(agency) {
+            // Create a simple hash based on agency slug and CFR references
+            const data = agency.slug + JSON.stringify(agency.cfr_references || []);
+            let hash = 0;
+            for (let i = 0; i < data.length; i++) {
+                const char = data.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return Math.abs(hash).toString(16).substring(0, 8).toUpperCase();
+        }
+
         // Load AI Explanation automatically
         async function loadAIExplanation(slug, idx) {
             const explanationDiv = document.getElementById(`ai-explanation-${idx}`);
@@ -908,7 +922,7 @@
             // If already showing, hide it
             if (analysisDiv.classList.contains('visible')) {
                 analysisDiv.classList.remove('visible');
-                btnText.textContent = 'Deep Regulatory Analysis';
+                btnText.textContent = 'Click To View Deep Regulatory Analysis';
                 return;
             }
 
@@ -986,7 +1000,7 @@
                             <strong>Error:</strong> ${data.detail || 'Failed to perform deep analysis'}
                         </div>
                     `;
-                    btnText.textContent = 'Deep Regulatory Analysis';
+                    btnText.textContent = 'Click To View Deep Regulatory Analysis';
                 }
             } catch (error) {
                 analysisDiv.innerHTML = `
@@ -994,7 +1008,7 @@
                         <strong>Error:</strong> Failed to connect to analysis service. ${error.message}
                     </div>
                 `;
-                btnText.textContent = 'Deep Regulatory Analysis';
+                btnText.textContent = 'Click To View Deep Regulatory Analysis';
             }
         }
 
