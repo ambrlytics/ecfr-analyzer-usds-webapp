@@ -11,10 +11,18 @@ Base = declarative_base()
 
 # Use absolute path for Render's persistent disk, fallback to relative for local dev
 import os
-if os.path.exists("/opt/render/project/src/data"):
-    # Production: Use Render's persistent disk
-    DB_PATH = Path("/opt/render/project/src/data/regulations.db")
-else:
+# Check for Render-specific paths (service name may vary)
+render_paths = [
+    "/opt/render/ecfr-analyzer-usds-webapp/src/data",
+    "/opt/render/project/src/data"
+]
+DB_PATH = None
+for path in render_paths:
+    if os.path.exists(path):
+        DB_PATH = Path(f"{path}/regulations.db")
+        break
+
+if DB_PATH is None:
     # Local development: Use relative path
     DB_PATH = Path("data/regulations.db")
     DB_PATH.parent.mkdir(exist_ok=True)

@@ -8,7 +8,7 @@ echo "🚀 Starting Federal Regulations Analyzer..."
 
 # 1. Ensure the data directory exists on the persistent disk
 echo "📁 Ensuring data directory exists..."
-mkdir -p /opt/render/project/src/data
+mkdir -p /opt/render/ecfr-analyzer-usds-webapp/src/data
 
 # 2. Initialize database if needed
 echo "💾 Initializing database..."
