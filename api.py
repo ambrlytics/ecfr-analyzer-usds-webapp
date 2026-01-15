@@ -123,6 +123,21 @@ async def root():
     return FileResponse("static/index.html")
 
 
+@app.get("/api/debug/cache-status")
+async def get_cache_status(db: Session = Depends(database.get_db)):
+    """Debug endpoint to check database cache status."""
+    cached_count = db.query(database.DeregulationCache).count()
+    return {
+        'database_path': str(database.DB_PATH),
+        'database_exists': database.DB_PATH.exists(),
+        'cached_badges_count': cached_count,
+        'sample_agencies': [
+            {'slug': c.agency_slug, 'likelihood': c.likelihood}
+            for c in db.query(database.DeregulationCache).limit(5).all()
+        ]
+    }
+
+
 @app.get("/api/agencies")
 async def get_agencies(db: Session = Depends(database.get_db)) -> List[str]:
     """Get list of all agencies."""
